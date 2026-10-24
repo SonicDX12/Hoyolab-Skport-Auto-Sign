@@ -39,8 +39,7 @@ data class AddEditAccountUiState(
     val isWebViewLoginOpen: Boolean = false,
     val isCapturingToken: Boolean = false,
     val hoyoTokenVisible: Boolean = false,
-    val skAccountTokenVisible: Boolean = false,
-    val languageMenuExpanded: Boolean = false
+    val skAccountTokenVisible: Boolean = false
 ) {
     // 2. Derived — getters only, so validity can never drift from the fields above
     val isEdit: Boolean get() = existing != null
@@ -96,8 +95,7 @@ class AddEditAccountViewModel(existing: Account?) : ViewModel() {
     }
     fun onSkAccountTokenChange(v: String) = _uiState.update { it.copy(skAccountToken = v) }
     fun onDiscordAvatarUrlChange(v: String) = _uiState.update { it.copy(discordAvatarUrl = v) }
-    fun onSkLanguageChange(v: String) = _uiState.update { it.copy(skLanguage = v, languageMenuExpanded = false) }
-    fun onLanguageMenuToggle(expanded: Boolean) = _uiState.update { it.copy(languageMenuExpanded = expanded) }
+    fun onSkLanguageChange(v: String) = _uiState.update { it.copy(skLanguage = v) }
     fun onHoyoTokenVisibilityToggle() = _uiState.update { it.copy(hoyoTokenVisible = !it.hoyoTokenVisible) }
     fun onSkAccountTokenVisibilityToggle() = _uiState.update { it.copy(skAccountTokenVisible = !it.skAccountTokenVisible) }
 

@@ -38,7 +38,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun generateId() = repo.generateId()
 
     fun saveSettings(settings: AppSettings) {
+        val old = this.settings.value
         repo.saveSettings(settings)
+        // Settings save on every keystroke; only touch WorkManager when the schedule itself changed
+        if (old.scheduleEnabled == settings.scheduleEnabled && old.scheduleHour == settings.scheduleHour &&
+            old.scheduleMinute == settings.scheduleMinute) return
         if (settings.scheduleEnabled) scheduleWork(settings) else cancelWork()
     }
 

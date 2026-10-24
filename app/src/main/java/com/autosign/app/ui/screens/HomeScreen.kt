@@ -1,13 +1,13 @@
 package com.autosign.app.ui.screens
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,10 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.autosign.app.data.model.Account
-import com.autosign.app.ui.components.AccountCard
+import com.autosign.app.ui.components.*
 import com.autosign.app.ui.theme.LocalReducedMotion
-import com.autosign.app.ui.theme.defaultEffectsSpec
-import com.autosign.app.ui.theme.defaultSpatialSpec
 
 @Stable
 interface HomeActions {
@@ -28,10 +26,8 @@ interface HomeActions {
     fun onDeleteAccount(accountId: String)
     fun onRunNow()
     fun onRunAccount(accountId: String)
-    fun onSettings()
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     accounts: List<Account>,
@@ -41,74 +37,69 @@ fun HomeScreen(
 ) {
     var deleteTarget by remember { mutableStateOf<Account?>(null) }
     val anyRunning = isRunning || runningAccountId != null
+    val wide = isWideScreen()
+    val reducedMotion = LocalReducedMotion.current
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("AutoSign") },
-                actions = {
-                    IconButton(onClick = actions::onSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        },
-        floatingActionButton = {
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (accounts.isNotEmpty()) {
-                    SmallFloatingActionButton(
-                        onClick = actions::onRunNow,
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
-                    ) {
-                        if (isRunning) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.PlayArrow, contentDescription = "Run now")
-                        }
-                    }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(if (wide) 2 else 1),
+        modifier = Modifier.centeredContent(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = if (wide) 16.dp else BottomBarClearance),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            ScreenHeader(
+                title = "AutoSign",
+                subtitle = when (accounts.size) {
+                    0 -> "Daily check-in for HoYoLAB & SKPORT"
+                    1 -> "1 account"
+                    else -> "${accounts.size} accounts"
                 }
-                FloatingActionButton(onClick = actions::onAddAccount, shape = MaterialTheme.shapes.extraLarge) {
-                    Icon(Icons.Default.Add, contentDescription = "Add account")
+            ) {
+                if (accounts.isNotEmpty()) {
+                    HeaderIconButton(
+                        icon = {
+                            if (isRunning) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                            else Icon(Icons.Default.PlayArrow, contentDescription = "Sign in all accounts")
+                        },
+                        onClick = actions::onRunNow,
+                        enabled = !anyRunning
+                    )
+                }
+                HeaderIconButton(
+                    icon = { Icon(Icons.Default.Add, contentDescription = "Add account") },
+                    onClick = actions::onAddAccount,
+                    highlighted = true
+                )
+            }
+        }
+
+        if (accounts.isEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                SectionCard(Modifier.padding(top = 32.dp), onClick = actions::onAddAccount) {
+                    Column(
+                        Modifier.fillMaxWidth().padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(Icons.Outlined.Inbox, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
+                        Text("No accounts yet", style = MaterialTheme.typography.titleMedium)
+                        Text("Tap + to add a HoYoLAB or SKPORT account", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                    }
                 }
             }
         }
-    ) { padding ->
-        if (accounts.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.Outlined.Inbox, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("No accounts yet", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Tap + to add a HoYoLAB or SKPORT account", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-                }
-            }
-        } else {
-            val reducedMotion = LocalReducedMotion.current
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(accounts, key = { it.id }) { account ->
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = if (reducedMotion) EnterTransition.None
-                        else fadeIn(defaultEffectsSpec()) + slideInVertically(defaultSpatialSpec())
-                    ) {
-                        AccountCard(
-                            account = account,
-                            isRunning = runningAccountId == account.id,
-                            runDisabled = anyRunning && runningAccountId != account.id,
-                            onRun = { actions.onRunAccount(account.id) },
-                            onEdit = { actions.onEditAccount(account) },
-                            onDelete = { deleteTarget = account }
-                        )
-                    }
-                }
-                item { Spacer(Modifier.height(80.dp)) }
-            }
+
+        items(accounts, key = { it.id }) { account ->
+            AccountCard(
+                account = account,
+                isRunning = runningAccountId == account.id,
+                runDisabled = anyRunning && runningAccountId != account.id,
+                onRun = { actions.onRunAccount(account.id) },
+                onEdit = { actions.onEditAccount(account) },
+                onDelete = { deleteTarget = account },
+                modifier = if (reducedMotion) Modifier else Modifier.animateItem()
+            )
         }
     }
 
